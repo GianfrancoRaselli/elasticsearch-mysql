@@ -1,0 +1,82 @@
+DROP DATABASE IF EXISTS prueba_elasticsearch;
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+-- -----------------------------------------------------
+-- Schema prueba_elasticsearch
+-- -----------------------------------------------------
+
+-- -----------------------------------------------------
+-- Schema prueba_elasticsearch
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `prueba_elasticsearch` DEFAULT CHARACTER SET utf8;
+USE `prueba_elasticsearch`;
+
+-- -----------------------------------------------------
+-- Table `prueba_elasticsearch`.`actualizaciones_autos`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `prueba_elasticsearch`.`actualizaciones_autos` (
+  `fecha_hora_actualizacion` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)
+ENGINE = InnoDB;
+
+-- -----------------------------------------------------
+-- Table `prueba_elasticsearch`.`marcas`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `prueba_elasticsearch`.`marcas` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `marca` VARCHAR(30) NOT NULL,
+  `descripcion` VARCHAR(300) NOT NULL,
+  `fecha_hora_modificacion` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `eliminado` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `prueba_elasticsearch`.`autos`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `prueba_elasticsearch`.`autos` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `titulo` VARCHAR(45) NOT NULL,
+  `caracteristicas` VARCHAR(300) NOT NULL,
+  `id_marca` INT NOT NULL,
+  `fecha_hora_modificacion` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `eliminado` TINYINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  INDEX `fk_autos_marcas_idx` (`id_marca` ASC),
+  CONSTRAINT `fk_autos_marcas`
+    FOREIGN KEY (`id_marca`)
+    REFERENCES `prueba_elasticsearch`.`marcas` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+
+
+DELIMITER $$
+DROP PROCEDURE IF EXISTS getAutosSinActualizar$$
+CREATE PROCEDURE getAutosSinActualizar()
+BEGIN
+    SET @ult_fecha_hora_actualizacion = (SELECT MAX(fecha_hora_actualizacion) FROM actualizaciones_autos);
+    INSERT INTO actualizaciones_autos() VALUES();
+    IF @ult_fecha_hora_actualizacion IS NOT NULL 
+        THEN SELECT autos.*, marcas.marca, marcas.descripcion as descripcion_marca FROM autos INNER JOIN marcas ON marcas.id = autos.id_marca WHERE autos.fecha_hora_modificacion > @ult_fecha_hora_actualizacion;
+    ELSE 
+	SELECT autos.*, marcas.marca, marcas.descripcion as descripcion_marca FROM autos INNER JOIN marcas ON marcas.id = autos.id_marca;
+    END IF;
+END
+$$
+
+
+INSERT INTO marcas(id, marca, descripcion) VALUES(1, "Toyota", "Toyota es una marca llena de historia y una de las empresas fabricantes de vehículos más grandes de Japón, que ha marcado el desarrollo del mercado automovilístico. Sin dudas, goza de la confianza, aceptación, liderazgo y fiabilidad de millones de usuarios en todo el mundo.");
+INSERT INTO marcas(id, marca, descripcion) VALUES(2, "Honda", "Honda es un fabricante japonés especializado en el sector de la automoción y las motocicletas que inicio su actividad en el año 1946. Además de en estos sectores tienen una gran experiencia en la robótica, náutica, aeronáutica y en componentes destinados a la industria del automóvil.");
+
+INSERT INTO autos(id, titulo, caracteristicas, id_marca) VALUES(1, "Toyota Corolla", "El Toyota Corolla es un compacto de segmento C del fabricante japonés Toyota, de 4.37 metros de largo en su carrocería de 5 puertas. Se trata de uno de los modelos más importantes de Toyota, fabricado en Japón, y destinado a cubrir las necesidades de un mercado cada vez más globalizado.", 1);
+INSERT INTO autos(id, titulo, caracteristicas, id_marca) VALUES(2, "Toyota Camry", "El Toyota Camry es un automóvil de turismo del segmento D producido por el fabricante japonés Toyota. Es un vehículo de cinco plazas, que fue inicialmente lanzado como una versión berlina del deportivo Toyota Celica y que a lo largo de su existencia mutaría su fisonomía, hasta ser convertido en un c", 1);
+INSERT INTO autos(id, titulo, caracteristicas, id_marca) VALUES(3, "Honda Civic", "El Honda Civic es un automóvil del segmento C fabricado por la empresa japonesa Honda. Tras haber pasado por varias modificaciones de generación, el Civic ha crecido en tamaño, colocándose entre el Honda Jazz y el Honda Accord. Todas las versiones hasta el momento tienen un motor delantero transvers", 2);
